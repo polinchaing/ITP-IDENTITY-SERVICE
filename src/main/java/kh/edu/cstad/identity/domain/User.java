@@ -1,19 +1,24 @@
 package kh.edu.cstad.identity.domain;
 
 import jakarta.persistence.*;
-import kh.edu.cstad.identity.config.Auditable;
+import kh.edu.cstad.identity.auditable.Auditable;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
+@NoArgsConstructor
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name= "users")
-public class User extends Auditable<String> {
+@Table(name = "users")
+public class User extends Auditable<String> implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,16 +68,39 @@ public class User extends Auditable<String> {
     private Boolean isEnabled;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name="users_roles",
-    joinColumns =@JoinColumn(name="user_id"), inverseJoinColumns = @JoinColumn(name="role_id"))
-    private Set<Role>roles;
+    @JoinTable(name = "users_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles;
 
-    // Direct permission
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "users_permissions",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private Set<Permission> permissions;
 
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
 
+    @Override
+    public boolean isAccountNonExpired() {
+        return UserDetails.super.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return UserDetails.super.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return UserDetails.super.isEnabled();
+    }
 }

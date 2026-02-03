@@ -1,13 +1,6 @@
 package kh.edu.cstad.identity.features.oauth2;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-
-
-
+import kh.edu.cstad.identity.auditable.CustomUserDetails;
 import kh.edu.cstad.identity.domain.Client;
 import org.springframework.security.jackson.SecurityJacksonModules;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -15,32 +8,42 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.jackson.OAuth2AuthorizationServerJacksonModule;
+
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+
 @Component
 public class JpaRegisteredClientRepository implements RegisteredClientRepository {
     private final ClientRepository clientRepository;
-    private final ObjectMapper objectMapper ;
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     public JpaRegisteredClientRepository(ClientRepository clientRepository) {
         Assert.notNull(clientRepository, "clientRepository cannot be null");
         this.clientRepository = clientRepository;
 
-        // New Version
-        ClassLoader loader = getClass().getClassLoader();
+        ClassLoader classLoader = getClass().getClassLoader();
+        BasicPolymorphicTypeValidator.Builder builder = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType(CustomUserDetails.class);
+//        BasicPolymorphicTypeValidator.Builder
+
         this.objectMapper = JsonMapper.builder()
-                .addModules(SecurityJacksonModules.getModules(loader))
+                .addModules(SecurityJacksonModules.getModules(classLoader, builder))
                 .addModule(new OAuth2AuthorizationServerJacksonModule())
                 .build();
 
-        // Old Version
 //        ClassLoader classLoader = JpaRegisteredClientRepository.class.getClassLoader();
 //        List<Module> securityModules = SecurityJackson2Modules.getModules(classLoader);
 //        this.objectMapper.registerModules(securityModules);
@@ -131,7 +134,7 @@ public class JpaRegisteredClientRepository implements RegisteredClientRepository
 
     private Map<String, Object> parseMap(String data) {
         try {
-            return this.objectMapper.readValue(data, new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
+            return this.objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
             });
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);

@@ -1,6 +1,12 @@
+eureka:
+  instance:
+    instance-id: ${spring.application.name}
+    prefer-ip-address: true
 spring:
   application:
-        name: ITP-identity-service
+        name: ITP-iam-server
+  config:
+      import: configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:4242/itp-server-db
     username: itp-admin
@@ -8,10 +14,18 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: http://localhost:9090
 server:
-      port: 9999
+      port: 9090
+## logs security
+logging.level.org.springframework.security: DEBUG
+logging.level.org.springframework.security.oauth2.server.authorization: TRACE
+logging.level.org.springframework.security.oauth2.server.authorization.oidc.authentication: TRACE

@@ -1,10 +1,6 @@
 package kh.edu.cstad.identity.features.oauth2;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-
+import kh.edu.cstad.identity.auditable.CustomUserDetails;
 import kh.edu.cstad.identity.domain.Authorization;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.security.jackson.SecurityJacksonModules;
@@ -30,12 +26,18 @@ import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 @Component
 public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService {
     private final AuthorizationRepository authorizationRepository;
     private final RegisteredClientRepository registeredClientRepository;
-    private final ObjectMapper objectMapper ;
+    private final ObjectMapper objectMapper;
 
     public JpaOAuth2AuthorizationService(AuthorizationRepository authorizationRepository, RegisteredClientRepository registeredClientRepository) {
         Assert.notNull(authorizationRepository, "authorizationRepository cannot be null");
@@ -44,10 +46,22 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
         this.registeredClientRepository = registeredClientRepository;
 
         ClassLoader loader = getClass().getClassLoader();
+        BasicPolymorphicTypeValidator.Builder builder = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType(CustomUserDetails.class);
+//        BasicPolymorphicTypeValidator.Builder builder = BasicPolymorphicTypeValidator.builder()
+//                .allowIfSubType(Authority.class)
+//                .allowIfSubType(UserAuthority.class)
+//                .allowIfSubType(CustomUserDetails.class);
+
         this.objectMapper = JsonMapper.builder()
-                .addModules(SecurityJacksonModules.getModules(loader))
+                .addModules(SecurityJacksonModules.getModules(loader, builder))
                 .addModule(new OAuth2AuthorizationServerJacksonModule())
                 .build();
+
+//        ClassLoader classLoader = JpaOAuth2AuthorizationService.class.getClassLoader();
+//        List<Module> securityModules = SecurityJackson2Modules.getModules(classLoader);
+//        this.objectMapper.registerModules(securityModules);
+//        this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
     }
 
     @Override
@@ -263,7 +277,7 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
 
     private Map<String, Object> parseMap(String data) {
         try {
-            return this.objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
+            return this.objectMapper.readValue(data, new TypeReference<>() {
             });
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
@@ -291,3 +305,4 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
         return new AuthorizationGrantType(authorizationGrantType);              // Custom authorization grant type
     }
 }
+
